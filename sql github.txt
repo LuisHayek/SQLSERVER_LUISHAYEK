@@ -1,0 +1,83 @@
+use northwind;
+
+execute dbo.dedo;
+
+---Bueno mi nombre es Luis hayek vamos a desarrollar ciertos querys para analisar ciertas variables con el fin de reportar y automatizar sobre una BD determinada---
+
+---Empezamos a visualizar todas las tablas y las vistas de nuestra BD para empezar nuestro analisis---
+
+SELECT * FROM INFORMATION_SCHEMA.TABLES
+
+---Vamos a ver por medio de un inner join un reporte que nos mostrara de forma detallada  ---
+
+SELECT Orders.OrderDate,Orders.ShippedDate, Customers.CompanyName, [Order Details].Quantity,Products.UnitsOnOrder,Suppliers.City
+FROM ((((Orders
+INNER JOIN Customers ON Orders.CustomerID = Customers.CustomerID)
+INNER JOIN [Order Details] ON Orders.OrderID = [Order Details].OrderID)
+INNER JOIN Products ON Products.SupplierID = Products.SupplierID)
+INNER JOIN Suppliers ON Suppliers.SupplierID = Suppliers.SupplierID)
+order by City;
+
+---Ahora vamos a construir nuestro procedimiento almacenado para ahorrarnos tiempo en nuestro reporte de inventario---
+
+ALTER PROCEDURE [dbo].[Procedimiento_uno]
+as 
+  select ProductID,ProductName,UnitsInStock,UnitsOnOrder,Discontinued,
+  case 
+  when UnitsInStock > 10 then 'hay inventario'
+  when UnitsInStock = 10 then 'proximo a vencer'
+	else 'no hay inventario suficiente'
+	end as 'Inventario producto' ,
+	case 
+  when Discontinued > 1 then 'Sigue disponible'
+   when Discontinued = 1 then 'Sigue disponible'
+  else 'ya descontinuado'
+	end as 'Descontinuados'
+	from Products;	
+
+	execute dbo.dedo;
+
+--- En este Union podemos para gnerar otro reporte para visualizar por paises determinados los proveedores y los clientes ---
+
+	SELECT 'Cliente' as type,CustomerID, ContactName, City, Country FROM Customers
+WHERE Country='USA'
+or Country='UK'
+or Country='Mexico'
+UNION
+SELECT 'proveedores',City, ContactName, Country FROM Suppliers
+WHERE Country='USA'
+or Country='UK'
+or Country='Mexico'
+---OS CONSTRAINS SON REGLAS QUE SE LE PONEN A LAS COLUMNAS, SIMEPRE SE PONEN AL FINAL DEL TIPO DE DATO EXISTEN ESTOS TIPOS: 
+NOT NULL,UNIQUE,PRIMARY KEY,FOREING KEY,CHECK,DEFAULT,CREATE INDEX.---
+
+CREATE TABLE TESTCONSTRAINS
+(test1 varchar(10) unique, 
+test2 int  primary key,
+test3 int not null,
+CHECK (test3>=18));
+
+CREATE TABLE Persons (
+    ID int NOT NULL,
+    LastName varchar(255) NOT NULL,
+    FirstName varchar(255),
+    Age int,
+    CONSTRAINT PK_Person PRIMARY KEY (ID,LastName)
+);
+
+---Ahora crearemos un reporte que contenga la cantidad de clientes por pais teniendo en cuenta el having---
+select count (CustomerID) as [Total de clientes],Country,City
+from Customers
+group by Country,City
+having count(CustomerID) > 3;
+
+---Ahora vamos a construir nuestro procedimiento almacenado para ahorrarnos tiempo en nuestro reporte de inventario---
+
+DECLARE @var2 varchar(50);    
+DECLARE @var3 int;        
+SELECT @var2 = 'name';    
+SELECT @var3 = '';         
+SELECT @var2 = QuantityPerUnit, @var3 =UnitsInStock
+FROM Products        
+WHERE ProductID = 4 ;        
+SELECT @var2 AS 'cantidad', @var3 AS 'unidades';
